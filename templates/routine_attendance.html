@@ -2,10 +2,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Routine & Attendance</title>
+    <title>Class Routine & Attendance</title>
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>Routine and Attendance Management</h1>
-    <p>Routine & Attendance Feature Page</p>
+<body class="bg-slate-900 text-white min-h-screen p-8">
+    <div class="max-w-5xl mx-auto space-y-6">
+        
+        <div class="border-b border-slate-700 pb-4">
+            <h1 class="text-3xl font-bold text-indigo-400">Class Routine & Attendance Tool</h1>
+            <p class="text-slate-400">Manage your class schedule and track attendance easily.</p>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
+            <h2 class="text-xl font-semibold mb-4 text-slate-200">Weekly Class Routine</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-700 text-slate-400">
+                            <th class="p-3">Day</th>
+                            <th class="p-3">Course Name</th>
+                            <th class="p-3">Time</th>
+                            <th class="p-3">Room</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700/50">
+                        <tr class="hover:bg-slate-700/30">
+                            <td class="p-3 text-indigo-300 font-medium">Sunday</td>
+                            <td class="p-3">Advanced Machine Learning</td>
+                            <td class="p-3">10:00 AM - 11:30 AM</td>
+                            <td class="p-3">Room 402</td>
+                        </tr>
+                        <tr class="hover:bg-slate-700/30">
+                            <td class="p-3 text-indigo-300 font-medium">Monday</td>
+                            <td class="p-3">UI/UX Design Studio</td>
+                            <td class="p-3">01:00 PM - 02:30 PM</td>
+                            <td class="p-3">Lab 2</td>
+                        </tr>
+                        <tr class="hover:bg-slate-700/30">
+                            <td class="p-3 text-indigo-300 font-medium">Tuesday</td>
+                            <td class="p-3">Discrete Mathematics</td>
+                            <td class="p-3">11:30 AM - 01:00 PM</td>
+                            <td class="p-3">Room 305</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
+            <h2 class="text-xl font-semibold mb-4 text-slate-200">Attendance Tracker</h2>
+            
+            <div class="space-y-4">
+                {% for student in students %}
+                <div class="flex items-center justify-between p-4 bg-slate-700/40 rounded-lg border border-slate-600">
+                    <div>
+                        <p class="font-semibold text-slate-100">{{ student.name }}</p>
+                        <p class="text-sm text-slate-400">ID: {{ student.id }}</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-5 h-5 accent-indigo-500 rounded" {% if student.status == 'Present' %}checked{% endif %}>
+                            <span class="text-sm font-medium text-slate-300">Mark Present</span>
+                        </label>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <button onclick="alert('Attendance Saved Successfully!')" class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg transition-all">
+                Save Attendance
+            </button>
+        </div>
+
+    </div>
 </body>
 </html>
