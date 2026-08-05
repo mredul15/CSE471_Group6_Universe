@@ -37,6 +37,7 @@ model Attendance {
 model AcademicGoal {
   id               String   @id @default(cuid())
   studentId        String   @default("student-current") 
+  semesterNumber   Int      @default(1)
   currentCgpa      Float
   completedCredits Int
   targetCgpa       Float
@@ -44,4 +45,19 @@ model AcademicGoal {
   requiredGpa      Float
   isPossible       Boolean
   createdAt        DateTime @default(now())
+  
+  // This links the specific courses to this exact goal
+  simulatedCourses SimulatedCourse[] 
+}
+
+// NEW: Model to save the actual courses added by the user
+model SimulatedCourse {
+  id             String       @id @default(cuid())
+  academicGoalId String
+  name           String
+  credits        Float
+  targetGrade    String
+  
+  // If the goal is deleted, delete these courses too
+  academicGoal   AcademicGoal @relation(fields: [academicGoalId], references: [id], onDelete: Cascade)
 }
