@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Module 1: Feature 1 - Routine & Attendance
+model Course {
+  id               String         @id @default(cuid())
+  code             String         
+  name             String         
+  routines         ClassRoutine[]
+  attendances      Attendance[]
+}
+
+model ClassRoutine {
+  id        String @id @default(cuid())
+  courseId  String
+  day       String 
+  startTime String 
+  endTime   String 
+  course    Course @relation(fields: [courseId], references: [id])
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  courseId  String
+  date      DateTime @default(now())
+  status    String   
+  course    Course   @relation(fields: [courseId], references: [id])
+}
+
+// Module 1: Feature 3 - CGPA Forecast
+model AcademicGoal {
+  id               String   @id @default(cuid())
+  studentId        String   @default("student-current") 
+  currentCgpa      Float
+  completedCredits Int
+  targetCgpa       Float
+  upcomingCredits  Int
+  requiredGpa      Float
+  isPossible       Boolean
+  createdAt        DateTime @default(now())
+}
