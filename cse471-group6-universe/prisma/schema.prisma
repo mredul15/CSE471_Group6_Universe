@@ -61,3 +61,13 @@ model SimulatedCourse {
   // If the goal is deleted, delete these courses too
   academicGoal   AcademicGoal @relation(fields: [academicGoalId], references: [id], onDelete: Cascade)
 }
+model User {
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  password       String
+  department     String
+  semester       Int
+  currentCgpa    Float
+  createdAt      DateTime @default(now())
+}
