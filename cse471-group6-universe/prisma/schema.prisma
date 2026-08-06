@@ -70,4 +70,26 @@ model User {
   semester       Int
   currentCgpa    Float
   createdAt      DateTime @default(now())
+  
+  // ADD THIS LINE: A user can have multiple saved goals
+  academicGoals  AcademicGoal[] 
+}
+
+model AcademicGoal {
+  id               String   @id @default(cuid())
+  
+  // REPLACE the old userId line with these two lines:
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  semesterNumber   Int
+  currentCgpa      Float
+  completedCredits Int
+  targetCgpa       Float
+  upcomingCredits  Int
+  requiredGpa      Float
+  isPossible       Boolean
+  createdAt        DateTime @default(now())
+  
+  simulatedCourses SimulatedCourse[] 
 }

@@ -2,6 +2,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
 
 const prisma = new PrismaClient();
 
@@ -28,7 +29,7 @@ export async function registerUser(data: {
       data: {
         name: data.name,
         email: data.email,
-        password: data.password, // In production, use bcrypt to hash this password
+        password: data.password, 
         department: data.department,
         semester: data.semester,
         currentCgpa: data.currentCgpa,
@@ -57,7 +58,10 @@ export async function loginUser(data: { email: string; password: string }) {
       return { success: false, message: "Wrong password. Click 'Forgot password?' if you need help." };
     }
 
-    return { success: true, message: "Login successful!", user };
+    // FIX FOR NEXT.JS 15+: cookies() must be awaited!
+    (await cookies()).set('userId', user.id, { path: '/' });
+
+    return { success: true, message: "Login successful!" };
   } catch (error) {
     console.error("Login Error:", error);
     return { success: false, message: "An error occurred during login." };
