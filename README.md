@@ -1,3 +1,36 @@
-# CSE471_Group6_Universe
-UniVerse is an all-in-one university campus super app built with Next.js, TypeScript, PostgreSQL, and Prisma. Features an AI study assistant, automated CGPA forecasting, smart student budget tracking, internal scholarship alerts, career matching, campus lost &amp; found, and student carpooling.
-Key Features🎓 Academic & Schedule ManagementClass Routine & Attendance Tracker: Log weekly course schedules, track daily attendance, and receive warnings before falling below required attendance thresholds.  Assignment & Quiz Scheduler: Countdown push notifications and automated task sorting based on deadline urgency.  Interactive CGPA Calculator: Target-based grade calculator that computes exact grade requirements for upcoming semesters to hit your goal CGPA.  💡 Financial & Career ToolsSmart Budget & Expense Tracker: AI-driven micro-finance ledger tracking daily spending with tailored savings recommendations and visual charts.  ScholarPing: Real-time internal waiver and scholarship matching system keyed directly to student CGPA and major.  Smart Job Aggregator: AI career matchmaker syncing with platforms like LinkedIn and BDJobs for real-time internship and job listings.  🤝 Peer-to-Peer & Campus LifeP2P Resource Exchange: Marketplace to buy, sell, rent, or donate academic materials, notes, and books.  Campus Carpool Hub: Route-sharing bulletin to connect peers heading in the same direction to split daily commute costs.  Campus Lost & Found: Centralized portal for reporting lost items with photo uploads and location tagging.  Campus Pulse & Hangout Broadcast: Combined official club event feed (with RSVPs) and real-time social activity broadcast for spontaneous campus hangouts.  🤖 AI Assistant & SafetyAI Study Assistant Chatbot: Powered by LLMs to answer queries, summarize lengthy notes, and auto-generate study flashcards.  Emergency Contact & Campus Alert: One-tap trigger system for immediate campus security broadcasts, medical assistance, and warden emergency contacts.  🛠️ Tech StackFramework: Next.js  Languages: TypeScript, JavaScript  Styling: TailwindCSS  Database & ORM: PostgreSQL + Prisma ORM  Deployment: Vercel  External APIs: OpenAI API, Google Calendar API, bKash / SSLCommerz API  👥 User RolesStudent: Access to routine tracking, CGPA forecasting, career aggregation, budget tools, AI chatbot, carpooling, and peer exchange.  Club / Faculty Admin: Post and manage official club events, workshops, skill-sharing seminars, and academic notices.  System Admin: Platform maintenance, user verification, marketplace monitoring, and system configuration management.  
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
