@@ -7,81 +7,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Module 1: Feature 1 - Routine & Attendance
-model Course {
-  id               String         @id @default(cuid())
-  code             String         
-  name             String         
-  routines         ClassRoutine[]
-  attendances      Attendance[]
-}
-
-model ClassRoutine {
-  id        String @id @default(cuid())
-  courseId  String
-  day       String 
-  startTime String 
-  endTime   String 
-  course    Course @relation(fields: [courseId], references: [id])
-}
-
-model Attendance {
-  id        String   @id @default(cuid())
-  courseId  String
-  date      DateTime @default(now())
-  status    String   
-  course    Course   @relation(fields: [courseId], references: [id])
-}
-
-// Module 1: Feature 3 - CGPA Forecast
-model AcademicGoal {
-  id               String   @id @default(cuid())
-  studentId        String   @default("student-current") 
-  semesterNumber   Int      @default(1)
-  currentCgpa      Float
-  completedCredits Int
-  targetCgpa       Float
-  upcomingCredits  Int
-  requiredGpa      Float
-  isPossible       Boolean
-  createdAt        DateTime @default(now())
-  
-  // This links the specific courses to this exact goal
-  simulatedCourses SimulatedCourse[] 
-}
-
-// NEW: Model to save the actual courses added by the user
-model SimulatedCourse {
-  id             String       @id @default(cuid())
-  academicGoalId String
-  name           String
-  credits        Float
-  targetGrade    String
-  
-  // If the goal is deleted, delete these courses too
-  academicGoal   AcademicGoal @relation(fields: [academicGoalId], references: [id], onDelete: Cascade)
-}
 model User {
-  id             String   @id @default(cuid())
+  id             String         @id @default(cuid())
   name           String
-  email          String   @unique
+  email          String         @unique
   password       String
   department     String
   semester       Int
   currentCgpa    Float
-  createdAt      DateTime @default(now())
-  
-  // ADD THIS LINE: A user can have multiple saved goals
-  academicGoals  AcademicGoal[] 
+  createdAt      DateTime       @default(now())
+
+  academicGoals  AcademicGoal[]
+  courses        Course[]
+  academicTasks  AcademicTask[]
+}
+
+model AcademicTask {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  course        String?
+  type          String   // "ASSIGNMENT" or "QUIZ"
+  dueAt         DateTime
+  reminderHours Int      @default(24)
+  notes         String?
+  isCompleted   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, dueAt])
 }
 
 model AcademicGoal {
-  id               String   @id @default(cuid())
-  
-  // REPLACE the old userId line with these two lines:
+  id               String            @id @default(cuid())
   userId           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   semesterNumber   Int
   currentCgpa      Float
   completedCredits Int
@@ -89,7 +50,47 @@ model AcademicGoal {
   upcomingCredits  Int
   requiredGpa      Float
   isPossible       Boolean
-  createdAt        DateTime @default(now())
-  
-  simulatedCourses SimulatedCourse[] 
+  createdAt        DateTime          @default(now())
+
+  simulatedCourses SimulatedCourse[]
+}
+
+model SimulatedCourse {
+  id             String       @id @default(cuid())
+  academicGoalId String
+  name           String
+  credits        Float
+  targetGrade    String
+
+  academicGoal   AcademicGoal @relation(fields: [academicGoalId], references: [id], onDelete: Cascade)
+}
+
+model Course {
+  id              String             @id @default(cuid())
+  userId          String
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code            String
+  title           String
+  section         String
+  credits         Float              @default(3.0)
+  semesterNumber  Int                @default(1)
+  classDays       String             @default("SUN, TUE") // e.g. "SUN, TUE"
+  startTime       String             @default("09:30 AM")
+  endTime         String             @default("10:45 AM")
+  grade           String?            
+  totalClasses    Int                @default(0)
+  attendedClasses Int                @default(0)
+  missedClasses   Int                @default(0)
+  createdAt       DateTime           @default(now())
+
+  attendanceLogs  AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  date      DateTime @default(now())
+  status    String   // "PRESENT" or "ABSENT"
+  createdAt DateTime @default(now())
 }
