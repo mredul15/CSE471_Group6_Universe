@@ -19,6 +19,9 @@ model User {
 
   academicGoals  AcademicGoal[]
   courses        Course[]
+  budgets        Budget[]
+  expenses       Expense[]
+  academicTasks  AcademicTask[]
 }
 
 model AcademicGoal {
@@ -75,4 +78,46 @@ model AttendanceRecord {
   date      DateTime @default(now())
   status    String   // "PRESENT" or "ABSENT"
   createdAt DateTime @default(now())
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Float
+  month     Int      // 1-12
+  year      Int      // e.g. 2026
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, month, year])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Float
+  category    String   // "FOOD", "TRANSIT", "PRINTING", "ACADEMIC", "ENTERTAINMENT", "OTHER"
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AcademicTask {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title         String
+  course        String?
+  type          String   // "ASSIGNMENT" or "QUIZ"
+  dueAt         DateTime
+  reminderHours Int      @default(24)
+  notes         String?
+  isCompleted   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId, dueAt])
 }

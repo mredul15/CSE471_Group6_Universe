@@ -36,10 +36,55 @@ export async function getDashboardData() {
       orderBy: { createdAt: 'desc' },
     });
 
-    return { success: true, user, courses, latestGoal };
+    // Fetch budget and expenses for the dashboard summary
+    const currentDate = new Date();
+    const targetMonth = currentDate.getMonth() + 1;
+    const targetYear = currentDate.getFullYear();
+
+    const budget = await prisma.budget.findUnique({
+      where: {
+        userId_month_year: {
+          userId,
+          month: targetMonth,
+          year: targetYear
+        }
+      }
+    });
+
+    const startOfMonth = new Date(targetYear, targetMonth - 1, 1);
+    const endOfMonth = new Date(targetYear, targetMonth, 0, 23, 59, 59, 999);
+
+    const expenses = await prisma.expense.findMany({
+      where: {
+        userId,
+        date: {
+          gte: startOfMonth,
+          lte: endOfMonth
+        }
+      }
+    });
+
+    const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
+
+    return { 
+      success: true, 
+      user, 
+      courses, 
+      latestGoal,
+      currentBudget: budget ? budget.amount : 0,
+      currentSpent: totalSpent
+    };
   } catch (error) {
     console.error("Dashboard Fetch Error:", error);
-    return { success: false, message: "Failed to load dashboard data.", user: null, courses: [], latestGoal: null };
+    return { 
+      success: false, 
+      message: "Failed to load dashboard data.", 
+      user: null, 
+      courses: [], 
+      latestGoal: null,
+      currentBudget: 0,
+      currentSpent: 0
+    };
   }
 }
 

@@ -250,6 +250,14 @@ export default function AttendancePage() {
                 const currentDate = selectedDates[course.id] || new Date().toISOString().split('T')[0];
                 const isWarning = course.missedClasses > 4;
 
+                // Find if there is an active log for the selected date
+                const activeLog = course.attendanceLogs.find(log => {
+                  const logDateStr = new Date(log.date).toISOString().split('T')[0];
+                  return logDateStr === currentDate;
+                });
+                const isPresentActive = activeLog?.status === 'PRESENT';
+                const isAbsentActive = activeLog?.status === 'ABSENT';
+
                 return (
                   <div key={course.id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
                     
@@ -299,19 +307,27 @@ export default function AttendancePage() {
                       <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                         <button
                           onClick={() => handleMarkAttendance(course.id, 'PRESENT')}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"
+                          className={`text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer ${
+                            isPresentActive
+                              ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm ring-2 ring-emerald-300'
+                              : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200'
+                          }`}
                         >
-                          + Present
+                          {isPresentActive ? '✓ Present' : '+ Present'}
                         </button>
                         <button
                           onClick={() => handleMarkAttendance(course.id, 'ABSENT')}
-                          className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition"
+                          className={`text-xs font-bold px-4 py-2.5 rounded-xl transition cursor-pointer ${
+                            isAbsentActive
+                              ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-sm ring-2 ring-rose-300'
+                              : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
+                          }`}
                         >
-                          + Absent
+                          {isAbsentActive ? '✓ Absent' : '+ Absent'}
                         </button>
                         <button
                           onClick={() => setExpandedCourse(expandedCourse === course.id ? null : course.id)}
-                          className="text-xs font-bold text-gray-500 bg-gray-200/60 px-3 py-2.5 rounded-xl transition"
+                          className="text-xs font-bold text-gray-500 bg-gray-200/60 px-3 py-2.5 rounded-xl transition cursor-pointer"
                         >
                           {expandedCourse === course.id ? "Hide Logs" : "Logs"}
                         </button>

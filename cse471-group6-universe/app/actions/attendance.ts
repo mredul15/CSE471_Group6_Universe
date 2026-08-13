@@ -97,27 +97,80 @@ export async function logAttendance(data: { courseId: string; status: 'PRESENT' 
       return { success: false, message: "Course not found." };
     }
 
-    await prisma.attendanceRecord.create({
-      data: {
+    const targetDate = new Date(data.date);
+    
+    // Find if there is already an attendance log for this date and course
+    const existingRecord = await prisma.attendanceRecord.findFirst({
+      where: {
         courseId: data.courseId,
-        status: data.status,
-        date: new Date(data.date),
+        date: targetDate
       }
     });
 
-    const isPresent = data.status === 'PRESENT';
-    await prisma.course.update({
-      where: { id: data.courseId },
-      data: {
-        totalClasses: course.totalClasses + 1,
-        attendedClasses: isPresent ? course.attendedClasses + 1 : course.attendedClasses,
-        missedClasses: !isPresent ? course.missedClasses + 1 : course.missedClasses,
-      }
-    });
+    if (existingRecord) {
+      if (existingRecord.status === data.status) {
+        // Toggle off: if clicked the same status, remove the log
+        await prisma.attendanceRecord.delete({
+          where: { id: existingRecord.id }
+        });
 
-    revalidatePath('/attendance');
-    revalidatePath('/dashboard');
-    return { success: true, message: `Marked as ${data.status}` };
+        const wasPresent = existingRecord.status === 'PRESENT';
+        await prisma.course.update({
+          where: { id: data.courseId },
+          data: {
+            totalClasses: Math.max(0, course.totalClasses - 1),
+            attendedClasses: wasPresent ? Math.max(0, course.attendedClasses - 1) : course.attendedClasses,
+            missedClasses: !wasPresent ? Math.max(0, course.missedClasses - 1) : course.missedClasses,
+          }
+        });
+
+        revalidatePath('/attendance');
+        revalidatePath('/dashboard');
+        return { success: true, message: "Attendance unmarked successfully!" };
+      } else {
+        // Change status: update record and adjust counts without changing totalClasses
+        await prisma.attendanceRecord.update({
+          where: { id: existingRecord.id },
+          data: { status: data.status }
+        });
+
+        const isNowPresent = data.status === 'PRESENT';
+        await prisma.course.update({
+          where: { id: data.courseId },
+          data: {
+            attendedClasses: isNowPresent ? course.attendedClasses + 1 : Math.max(0, course.attendedClasses - 1),
+            missedClasses: isNowPresent ? Math.max(0, course.missedClasses - 1) : course.missedClasses + 1,
+          }
+        });
+
+        revalidatePath('/attendance');
+        revalidatePath('/dashboard');
+        return { success: true, message: `Changed attendance to ${data.status}!` };
+      }
+    } else {
+      // Create new record
+      await prisma.attendanceRecord.create({
+        data: {
+          courseId: data.courseId,
+          status: data.status,
+          date: targetDate,
+        }
+      });
+
+      const isPresent = data.status === 'PRESENT';
+      await prisma.course.update({
+        where: { id: data.courseId },
+        data: {
+          totalClasses: course.totalClasses + 1,
+          attendedClasses: isPresent ? course.attendedClasses + 1 : course.attendedClasses,
+          missedClasses: !isPresent ? course.missedClasses + 1 : course.missedClasses,
+        }
+      });
+
+      revalidatePath('/attendance');
+      revalidatePath('/dashboard');
+      return { success: true, message: `Logged attendance as ${data.status}!` };
+    }
   } catch (error) {
     console.error("Log Attendance Error:", error);
     return { success: false, message: "Failed to log attendance." };

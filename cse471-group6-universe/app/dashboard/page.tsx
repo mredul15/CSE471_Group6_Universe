@@ -32,6 +32,8 @@ export default function DashboardPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [goal, setGoal] = useState<AcademicGoalItem | null>(null);
+  const [currentBudget, setCurrentBudget] = useState(0);
+  const [currentSpent, setCurrentSpent] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +43,8 @@ export default function DashboardPage() {
         setUser(res.user);
         setCourses(res.courses);
         setGoal(res.latestGoal);
+        setCurrentBudget(res.currentBudget || 0);
+        setCurrentSpent(res.currentSpent || 0);
       } else {
         router.push('/login');
       }
@@ -205,6 +209,36 @@ export default function DashboardPage() {
                 className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
               >
                 Launch Attendance Tracker
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Feature Card 3: Smart Budget & Expense Tracker */}
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center font-bold mb-6 group-hover:bg-amber-600 group-hover:text-white transition font-sans text-xl">
+                  💰
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Smart Budget & Expense Tracker</h3>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                  Track daily expenses against a personalized monthly budget. Leverage AI to analyze spending habits, offer savings tips, and forecast budget shortages.
+                </p>
+
+                <div className="bg-amber-50/60 border border-amber-100 rounded-2xl p-4 mb-6 text-xs font-semibold text-amber-900 flex justify-between items-center">
+                  <span>Month Budget: <strong>Tk {currentBudget.toFixed(2)}</strong></span>
+                  <span className="text-amber-700 font-bold">
+                    Spent: Tk {currentSpent.toFixed(2)}
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href="/budget"
+                className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
+              >
+                Launch Budget Tracker
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>
