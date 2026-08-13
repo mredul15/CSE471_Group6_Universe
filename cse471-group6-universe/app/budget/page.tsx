@@ -61,24 +61,29 @@ export default function BudgetPage() {
 
   const loadData = async (m: number, y: number) => {
     setLoading(true);
-    const budgetRes = await getBudgetData(m, y);
-    if (budgetRes.success) {
-      setUser(budgetRes.user as unknown as UserProfile);
-      setExpenses((budgetRes.expenses || []).map(e => ({
-        ...e,
-        date: new Date(e.date).toISOString().split('T')[0]
-      })));
-      const bAmt = budgetRes.budget?.amount || 0;
-      setBudgetAmount(bAmt);
-      setNewBudget(bAmt > 0 ? bAmt.toString() : '');
-    }
+    try {
+      const budgetRes = await getBudgetData(m, y);
+      if (budgetRes && budgetRes.success) {
+        setUser(budgetRes.user as unknown as UserProfile);
+        setExpenses((budgetRes.expenses || []).map(e => ({
+          ...e,
+          date: new Date(e.date).toISOString().split('T')[0]
+        })));
+        const bAmt = budgetRes.budget?.amount || 0;
+        setBudgetAmount(bAmt);
+        setNewBudget(bAmt > 0 ? bAmt.toString() : '');
+      }
 
-    const insightsRes = await getAISpendingInsights(m, y);
-    if (insightsRes.success) {
-      setInsights(insightsRes.insights || []);
-      setForecast(insightsRes.shortageForecast as ShortageForecast);
+      const insightsRes = await getAISpendingInsights(m, y);
+      if (insightsRes && insightsRes.success) {
+        setInsights(insightsRes.insights || []);
+        setForecast(insightsRes.shortageForecast as ShortageForecast);
+      }
+    } catch (error) {
+      console.error("Error loading budget data:", error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -89,11 +94,21 @@ export default function BudgetPage() {
     e.preventDefault();
     const amt = parseFloat(newBudget);
     if (isNaN(amt) || amt <= 0) return;
-    setSubmittingBudget(true);
-    const res = await updateBudget(amt, currentMonth, currentYear);
-    setSubmittingBudget(false);
-    if (res.success) {
-      loadData(currentMonth, currentYear);
+
+    try {
+      setSubmittingBudget(true);
+      const res = await updateBudget(amt, currentMonth, currentYear);
+      if (res && res.success) {
+        setBudgetAmount(amt);
+        await loadData(currentMonth, currentYear);
+      } else {
+        console.error("Failed to update budget", res?.message);
+        alert(res?.message || "Failed to update budget limit.");
+      }
+    } catch (error) {
+      console.error("Error updating budget:", error);
+    } finally {
+      setSubmittingBudget(false);
     }
   };
 
@@ -101,30 +116,44 @@ export default function BudgetPage() {
     e.preventDefault();
     const amt = parseFloat(expenseForm.amount);
     if (isNaN(amt) || amt <= 0) return;
-    setSubmittingExpense(true);
-    const res = await addExpense({
-      amount: amt,
-      category: expenseForm.category,
-      description: expenseForm.description,
-      date: expenseForm.date
-    });
-    setSubmittingExpense(false);
-    if (res.success) {
-      setExpenseForm({
-        amount: '',
+
+    try {
+      setSubmittingExpense(true);
+      const res = await addExpense({
+        amount: amt,
         category: expenseForm.category,
-        description: '',
-        date: new Date().toISOString().split('T')[0]
+        description: expenseForm.description,
+        date: expenseForm.date
       });
-      loadData(currentMonth, currentYear);
+
+      if (res && res.success) {
+        setExpenseForm({
+          amount: '',
+          category: expenseForm.category,
+          description: '',
+          date: new Date().toISOString().split('T')[0]
+        });
+        await loadData(currentMonth, currentYear);
+      } else {
+        console.error("Failed to add expense");
+        alert(res?.message || "Failed to log expense.");
+      }
+    } catch (error) {
+      console.error("Error adding expense:", error);
+    } finally {
+      setSubmittingExpense(false);
     }
   };
 
   const handleDeleteExpense = async (id: string) => {
     if (!confirm("Are you sure you want to delete this expense?")) return;
-    const res = await deleteExpense(id);
-    if (res.success) {
-      loadData(currentMonth, currentYear);
+    try {
+      const res = await deleteExpense(id);
+      if (res && res.success) {
+        await loadData(currentMonth, currentYear);
+      }
+    } catch (error) {
+      console.error("Error deleting expense:", error);
     }
   };
 
@@ -160,7 +189,7 @@ export default function BudgetPage() {
 
   const donutTotal = donutData.reduce((sum, item) => sum + item.value, 0);
 
-  // SVG Bar Chart: Daily spending (1 to 31)
+  // SVG Bar Chart: Daily spending
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
   const dailySpentArray = Array.from({ length: daysInMonth }, (_, i) => {
     const dayNum = i + 1;
@@ -187,7 +216,6 @@ export default function BudgetPage() {
     );
   }
 
-  // Generate category pie slices
   let cumulativePercent = 0;
   const donutSlices = donutData.map((slice) => {
     const percent = slice.value / donutTotal;
@@ -198,8 +226,6 @@ export default function BudgetPage() {
     const endY = Math.sin(2 * Math.PI * cumulativePercent);
     const largeArcFlag = percent > 0.5 ? 1 : 0;
 
-    // SVG coordinates centered at 0,0, radius 1
-    // Scale to radius 40, centered at 50,50
     const r = 35;
     const x1 = 50 + r * startX;
     const y1 = 50 + r * startY;
@@ -232,7 +258,6 @@ export default function BudgetPage() {
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
-            {/* Month Selector */}
             <select
               value={currentMonth}
               onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
@@ -277,7 +302,6 @@ export default function BudgetPage() {
         {/* Dashboard Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           
-          {/* Card 1: Budget limit */}
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Monthly Budget</p>
@@ -295,14 +319,13 @@ export default function BudgetPage() {
               <button
                 type="submit"
                 disabled={submittingBudget}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shrink-0"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition shrink-0 cursor-pointer disabled:opacity-50"
               >
                 {submittingBudget ? "..." : "Set"}
               </button>
             </form>
           </div>
 
-          {/* Card 2: Spent */}
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex justify-between items-center">
@@ -325,7 +348,6 @@ export default function BudgetPage() {
             </div>
           </div>
 
-          {/* Card 3: Remaining */}
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Remaining Balance</p>
@@ -345,10 +367,8 @@ export default function BudgetPage() {
         {/* Charts & Form Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Column 1: Add Expense Form & Ledger */}
           <div className="space-y-6">
             
-            {/* Form */}
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
               <div>
                 <h3 className="font-bold text-gray-900 text-base">Log New Expense</h3>
@@ -402,7 +422,7 @@ export default function BudgetPage() {
                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Description</label>
                   <input
                     type="text"
-                    placeholder="e.g. Lunch at cafeteria, photocopy, taxi fare"
+                    placeholder="e.g. Lunch at cafeteria, photocopy"
                     value={expenseForm.description}
                     onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })}
                     className="w-full px-3.5 py-2 border border-gray-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -412,14 +432,13 @@ export default function BudgetPage() {
                 <button
                   type="submit"
                   disabled={submittingExpense}
-                  className="w-full bg-[#0f172a] text-white font-bold py-3 rounded-xl text-xs hover:bg-gray-800 transition disabled:opacity-50 mt-2 shadow-md"
+                  className="w-full bg-[#0f172a] text-white font-bold py-3 rounded-xl text-xs hover:bg-gray-800 transition disabled:opacity-50 mt-2 shadow-md cursor-pointer"
                 >
                   {submittingExpense ? "Logging..." : "+ Log Expense"}
                 </button>
               </form>
             </div>
 
-            {/* Profile Info Summary */}
             {user && (
               <div className="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-5 text-xs font-semibold text-indigo-900 space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 mb-1">Student Context</p>
@@ -440,13 +459,10 @@ export default function BudgetPage() {
 
           </div>
 
-          {/* Column 2: Data Visualizations & Charts */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Charts section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
-              {/* Category Donut Chart */}
               <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between items-center text-center">
                 <div className="w-full text-left mb-4">
                   <h3 className="font-bold text-gray-900 text-sm">Category Breakdown</h3>
@@ -459,7 +475,6 @@ export default function BudgetPage() {
                   </div>
                 ) : (
                   <div className="w-full flex flex-col items-center gap-4">
-                    {/* SVG Pie Chart */}
                     <div className="relative w-40 h-40">
                       <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
                         {donutSlices.map((slice, index) => (
@@ -470,17 +485,14 @@ export default function BudgetPage() {
                             className="transition-all hover:opacity-85 duration-350 cursor-pointer"
                           />
                         ))}
-                        {/* Middle circle to turn it into a donut */}
                         <circle cx="50" cy="50" r="18" fill="white" />
                       </svg>
-                      {/* Center total tag */}
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                         <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
                         <span className="text-xs font-black text-gray-900 mt-0.5">Tk {donutTotal.toFixed(0)}</span>
                       </div>
                     </div>
 
-                    {/* Donut Legend */}
                     <div className="grid grid-cols-2 gap-2 text-[10px] font-bold w-full text-left mt-2">
                       {donutData.map((item, idx) => (
                         <div key={idx} className="flex items-center gap-1.5">
@@ -494,7 +506,6 @@ export default function BudgetPage() {
                 )}
               </div>
 
-              {/* Daily Spend Trend Bar Chart */}
               <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between w-full">
                 <div className="w-full text-left mb-4">
                   <h3 className="font-bold text-gray-900 text-sm">Daily Expenses Trend</h3>
@@ -507,17 +518,14 @@ export default function BudgetPage() {
                   </div>
                 ) : (
                   <div className="w-full flex flex-col justify-end">
-                    {/* SVG Bar Chart container */}
                     <div className="h-32 flex items-end gap-1 w-full border-b border-gray-100 pb-1">
                       {dailySpentArray.map((d, index) => {
                         const h = (d.amount / maxDailySpend) * 100;
                         return (
                           <div key={index} className="flex-1 flex flex-col items-center group relative cursor-pointer">
-                            {/* Hover tooltip */}
                             <div className="absolute bottom-full mb-1 bg-gray-900 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition z-10 whitespace-nowrap">
                               Day {d.day}: Tk {d.amount.toFixed(0)}
                             </div>
-                            {/* Bar segment */}
                             <div
                               style={{ height: `${Math.max(4, h)}%` }}
                               className={`w-full rounded-t-sm transition-all duration-300 ${d.amount > 0 ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-100'}`}
@@ -526,7 +534,6 @@ export default function BudgetPage() {
                         );
                       })}
                     </div>
-                    {/* Axis Labels */}
                     <div className="flex justify-between text-[9px] font-bold text-gray-400 mt-2 px-1">
                       <span>Day 1</span>
                       <span>Day 15</span>
@@ -538,7 +545,6 @@ export default function BudgetPage() {
 
             </div>
 
-            {/* AI Custom Savings Recommendations Panel */}
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
               <h3 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
                 <span>🤖</span> AI Savings & Academic Insights
@@ -571,7 +577,6 @@ export default function BudgetPage() {
               )}
             </div>
 
-            {/* Transactions Ledger */}
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <div>
