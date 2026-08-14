@@ -3,13 +3,14 @@
 import { PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { GoogleGenAI } from '@google/genai';
+import Groq from 'groq-sdk';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Groq Client Initialization (100% Free AI Engine)
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 async function getAuthUserId() {
   try {
@@ -234,16 +235,16 @@ export async function getAISpendingInsights(month: number, year: number) {
       Remaining Budget: Tk ${remaining}
       Daily Average Spend: Tk ${dailyAverage.toFixed(2)}
       
-      Provide a detailed financial health assessment and shortage forecast highlighting specific risks and actionable control measures.`;
+      Provide a short, direct financial assessment and shortage forecast based on these exact numbers.`;
 
       try {
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash',
-          contents: prompt,
+        const completion = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile",
+          messages: [{ role: "user", content: prompt }],
         });
-        shortageForecastText = response.text || `On Track! You are spending Tk ${dailyAverage.toFixed(2)}/day on average.`;
+        shortageForecastText = completion.choices[0]?.message?.content || `On Track! You are spending Tk ${dailyAverage.toFixed(2)}/day on average.`;
       } catch (apiError) {
-        console.error("Gemini API Call Failed:", apiError);
+        console.error("Groq API Call Failed:", apiError);
         shortageForecastText = `On Track! You are spending Tk ${dailyAverage.toFixed(2)}/day on average.`;
       }
 
@@ -258,6 +259,7 @@ export async function getAISpendingInsights(month: number, year: number) {
       ENTERTAINMENT: 0,
       OTHER: 0
     };
+
     expenses.forEach(e => {
       const cat = (e.category || 'OTHER').toUpperCase();
       if (categoryTotals[cat] !== undefined) {
@@ -270,35 +272,37 @@ export async function getAISpendingInsights(month: number, year: number) {
     const insights: AIInsightCard[] = [];
 
     try {
-      const recommendationPrompt = `Act as an AI finance mentor for a university student. Here is their current spending breakdown:
+      const recommendationPrompt = `Act as an AI finance mentor for a university student. Here is their dynamic monthly expense breakdown:
       - Food & Snacks: Tk ${categoryTotals['FOOD']}
       - Transit: Tk ${categoryTotals['TRANSIT']}
-      - Printing & Academic: Tk ${categoryTotals['PRINTING'] + categoryTotals['ACADEMIC']}
+      - Academic & Printing: Tk ${categoryTotals['PRINTING'] + categoryTotals['ACADEMIC']}
       - Entertainment: Tk ${categoryTotals['ENTERTAINMENT']}
-      - Other: Tk ${categoryTotals['OTHER']}
+      - Other Expenses: Tk ${categoryTotals['OTHER']}
       - Total Monthly Budget: Tk ${totalBudget}
-      - Total Spent: Tk ${totalSpent}
+      - Total Spent So Far: Tk ${totalSpent}
 
-      Provide 2 to 3 distinct, professional, and comprehensive savings recommendations or tactical advice to optimize their student budget and control unnecessary expenses. Format it clearly with bullet points or structured advice.`;
+      Based strictly on these exact numbers (e.g., notice if transit or food is higher), provide 2 to 3 distinct, practical, and highly specific savings recommendations to help them manage their student budget. Use clear bullet points and concrete action items.`;
 
-      const recResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: recommendationPrompt,
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: recommendationPrompt }],
       });
+
+      const recommendationText = completion.choices[0]?.message?.content || "Optimize your daily campus transit and food costs to maximize monthly savings.";
 
       insights.push({
         title: "AI Tailored Savings Recommendations & Habit Analysis",
         type: "success",
         icon: "💡",
-        message: recResponse.text || "Optimize your daily campus transit and food costs to maximize monthly savings and prevent overspending."
+        message: recommendationText
       });
-    } catch (err) {
-      console.error("Gemini Recommendation Error:", err);
+    } catch (err: any) {
+      console.error("Groq Recommendation Error Details:", err);
       insights.push({
         title: "AI Savings Recommendations",
-        type: "success",
+        type: "warning",
         icon: "💡",
-        message: "• Monitor high-expense categories like food and entertainment.\n• Set daily spending caps to stay comfortably within your personalized budget limit."
+        message: `API Error: ${err?.message || "Could not fetch live recommendations."}`
       });
     }
 
