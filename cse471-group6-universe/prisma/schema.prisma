@@ -22,6 +22,11 @@ model User {
   budgets        Budget[]
   expenses       Expense[]
   academicTasks  AcademicTask[]
+
+  // --- Module 2 / Feature 3: Smart Job Aggregator ---
+  jobPreference  JobPreference?
+  savedJobs      SavedJob[]
+  jobAlerts      JobAlert[]
 }
 
 model AcademicGoal {
@@ -62,7 +67,7 @@ model Course {
   classDays       String             @default("SUN, TUE") // e.g. "SUN, TUE"
   startTime       String             @default("09:30 AM")
   endTime         String             @default("10:45 AM")
-  grade           String?            
+  grade           String?
   totalClasses    Int                @default(0)
   attendedClasses Int                @default(0)
   missedClasses   Int                @default(0)
@@ -120,4 +125,92 @@ model AcademicTask {
   updatedAt     DateTime @updatedAt
 
   @@index([userId, dueAt])
+}
+
+// ---------------------------------------------------------------------------
+// MODULE 2 - FEATURE 3
+// Smart Job Aggregator & Alert System (LinkedIn + BDJobs)
+// ---------------------------------------------------------------------------
+
+/// A single employment / internship listing pulled from an external source.
+/// Listings are shared across all users (one row per real-world job), while
+/// per-student state lives in SavedJob / JobAlert.
+model JobListing {
+  id              String     @id @default(cuid())
+  source          String     // "LINKEDIN" | "BDJOBS" | "CURATED"
+  externalId      String     // the id given by the source
+  url             String
+  title           String
+  company         String
+  companyLogo     String?
+  location        String     @default("Dhaka, Bangladesh")
+  isRemote        Boolean    @default(false)
+  jobType         String     @default("INTERNSHIP") // INTERNSHIP | FULL_TIME | PART_TIME | CONTRACT
+  experienceLevel String     @default("ENTRY")      // INTERN | ENTRY | MID | SENIOR
+  description     String     @db.Text
+  skills          String[]   @default([])
+  category        String     @default("GENERAL")    // SOFTWARE | DATA | HARDWARE | BUSINESS | FINANCE | MARKETING | GENERAL
+  salaryText      String?
+  minCgpa         Float?
+  postedAt        DateTime   @default(now())
+  deadline        DateTime?
+  isActive        Boolean    @default(true)
+  fetchedAt       DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+
+  savedBy         SavedJob[]
+  alerts          JobAlert[]
+
+  @@unique([source, externalId])
+  @@index([postedAt])
+  @@index([category, jobType])
+}
+
+/// What this student wants the aggregator to look for.
+model JobPreference {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keywords           String[]  @default([])   // free-text search terms, e.g. "software intern"
+  skills             String[]  @default([])   // "React", "Python", "Figma"
+  preferredLocations String[]  @default([])   // "Dhaka", "Remote"
+  jobTypes           String[]  @default(["INTERNSHIP"])
+  minMatchScore      Int       @default(50)   // alerts only fire above this
+  alertsEnabled      Boolean   @default(true)
+  lastSyncedAt       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+/// A job the student bookmarked, plus their application pipeline status.
+model SavedJob {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId     String
+  job       JobListing @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status    String     @default("SAVED") // SAVED | APPLIED | INTERVIEW | OFFER | REJECTED
+  notes     String?
+  appliedAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, jobId])
+  @@index([userId, status])
+}
+
+/// A generated notification: "this new listing matched your profile at 82%".
+model JobAlert {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId      String
+  job        JobListing @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  matchScore Int
+  reason     String
+  isRead     Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+
+  @@unique([userId, jobId])
+  @@index([userId, isRead])
 }
