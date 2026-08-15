@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import { fetchBdJobs } from "./providers/bdjobs";
-import { fetchCuratedJobs } from "./providers/curated";
+
 import { fetchLinkedInJobs } from "./providers/linkedin";
 import type { JobType, ProviderQuery, ProviderResult, RawJob } from "./types";
 
@@ -82,18 +82,17 @@ export function buildQuery(options: {
 
 export async function syncJobs(query: ProviderQuery): Promise<SyncReport> {
   const settled = await Promise.allSettled([
-    fetchLinkedInJobs(query),
-    fetchBdJobs(query),
-    fetchCuratedJobs(query),
-  ]);
+  fetchLinkedInJobs(query),
+  fetchBdJobs(query),
+]);
 
   const results: ProviderResult[] = settled.map((outcome, index) => {
-    if (outcome.status === "fulfilled") return outcome.value;
+     if (outcome.status === "fulfilled") return outcome.value;
 
-    const source = (["LINKEDIN", "BDJOBS", "CURATED"] as const)[index];
-    console.error(`[jobs] ${source} provider rejected:`, outcome.reason);
-    return { source, jobs: [], ok: false, note: `${source} provider crashed.` };
-  });
+      const source = (["LINKEDIN", "BDJOBS"] as const)[index];
+  console.error(`[jobs] ${source} provider rejected:`, outcome.reason);
+  return { source, jobs: [], ok: false, note: `${source} provider crashed.` };
+});
 
   const merged = dedupeJobs(results.flatMap((result) => result.jobs));
 

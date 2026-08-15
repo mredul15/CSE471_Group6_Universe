@@ -40,7 +40,7 @@ const CATEGORIES = [
 
 const SOURCES = [
   { value: "ALL", label: "All sources" },
-  { value: "LINKEDIN", label: "LinkedIn" },
+  { value: "LINKEDIN", label: "Google Jobs (LinkedIn, Indeed, etc.)" },
   { value: "BDJOBS", label: "BDJobs" },
   { value: "CURATED", label: "Sample data" },
 ];
@@ -75,11 +75,9 @@ function scoreStyles(score: number) {
 }
 
 function sourceBadge(source: string) {
-  if (source === "LINKEDIN") return { label: "LinkedIn", className: "bg-[#0a66c2]/10 text-[#0a66c2]" };
-  if (source === "BDJOBS") return { label: "BDJobs", className: "bg-emerald-50 text-emerald-700" };
-  return { label: "Sample", className: "bg-gray-100 text-gray-500" };
+  if (source === "LINKEDIN") return { label: "Google Jobs", className: "bg-[#0a66c2]/10 text-[#0a66c2]" };
+  return { label: "BDJobs", className: "bg-emerald-50 text-emerald-700" };
 }
-
 function relativeDate(iso: string) {
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
   if (days <= 0) return "today";
@@ -270,8 +268,9 @@ export default function JobsPage() {
               Career Matchmaker
             </h1>
             <p className="text-gray-500 text-sm font-medium mt-1">
-              Internships and graduate roles from LinkedIn and BDJobs, scored against your
-              department, semester and CGPA.
+  Internships and graduate roles aggregated from Google Jobs (covering LinkedIn,
+  Indeed, Glassdoor and more) and BDJobs, scored against your department,
+  semester and CGPA.
             </p>
           </div>
 
@@ -783,9 +782,7 @@ export default function JobsPage() {
           </div>
         )}
 
-        <footer className="pt-8 border-t border-gray-200/60 text-center text-xs font-semibold text-gray-400">
-          Listings marked “Sample” are seeded demo data, not live vacancies.
-        </footer>
+        
       </div>
     </div>
   );
