@@ -1,6 +1,6 @@
 "use server";
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
@@ -30,7 +30,7 @@ export async function getLostFoundItems(filters?: {
       return { success: false, message: "Unauthorized", items: [], currentUserId: null };
     }
 
-    const whereClause: any = {};
+    const whereClause: Prisma.LostFoundItemWhereInput = {};
 
     if (filters?.type && filters.type !== "ALL") {
       whereClause.type = filters.type.toUpperCase();

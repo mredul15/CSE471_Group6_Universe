@@ -8,26 +8,39 @@ datasource db {
 }
 
 model User {
-  id             String         @id @default(cuid())
-  name           String
-  email          String         @unique
-  password       String
-  department     String
-  semester       Int
-  currentCgpa    Float
-  createdAt      DateTime       @default(now())
-
-  academicGoals  AcademicGoal[]
-  courses        Course[]
-  budgets        Budget[]
-  expenses       Expense[]
-  academicTasks  AcademicTask[]
+  id               String             @id @default(cuid())
+  name             String
+  email            String             @unique
+  password         String
+  department       String
+  semester         Int
+  currentCgpa      Float
+  createdAt        DateTime           @default(now())
+  academicGoals    AcademicGoal[]
+  academicTasks    AcademicTask[]
+  budgets          Budget[]
+  courses          Course[]
+  expenses         Expense[]
+  jobAlerts        JobAlert[]
+  jobPreference    JobPreference?
+  savedJobs        SavedJob[]
+  SavedScholarship SavedScholarship[]
+  ScholarshipAlert ScholarshipAlert[]
+  resources        Resource[]
+  lostFoundItems   LostFoundItem[]
+  campusEvents     CampusEvent[]
+  eventRsvps       EventRsvp[]
+  hangouts         HangoutBroadcast[]
+  hangoutResponses HangoutResponse[]
+  hangoutMessages  HangoutMessage[]
+  raisedAlerts     CampusAlert[]
+  alertAcks        AlertAcknowledgement[]
+  sosRequests      SosRequest[]
 }
 
 model AcademicGoal {
   id               String            @id @default(cuid())
   userId           String
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   semesterNumber   Int
   currentCgpa      Float
   completedCredits Int
@@ -36,7 +49,7 @@ model AcademicGoal {
   requiredGpa      Float
   isPossible       Boolean
   createdAt        DateTime          @default(now())
-
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   simulatedCourses SimulatedCourse[]
 }
 
@@ -46,49 +59,47 @@ model SimulatedCourse {
   name           String
   credits        Float
   targetGrade    String
-
   academicGoal   AcademicGoal @relation(fields: [academicGoalId], references: [id], onDelete: Cascade)
 }
 
 model Course {
   id              String             @id @default(cuid())
   userId          String
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   code            String
   title           String
   section         String
   credits         Float              @default(3.0)
   semesterNumber  Int                @default(1)
-  classDays       String             @default("SUN, TUE") // e.g. "SUN, TUE"
+  classDays       String             @default("SUN, TUE")
   startTime       String             @default("09:30 AM")
   endTime         String             @default("10:45 AM")
-  grade           String?            
+  grade           String?
   totalClasses    Int                @default(0)
   attendedClasses Int                @default(0)
   missedClasses   Int                @default(0)
   createdAt       DateTime           @default(now())
-
   attendanceLogs  AttendanceRecord[]
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AttendanceRecord {
   id        String   @id @default(cuid())
   courseId  String
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   date      DateTime @default(now())
-  status    String   // "PRESENT" or "ABSENT"
+  status    String
   createdAt DateTime @default(now())
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 }
 
 model Budget {
   id        String   @id @default(cuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount    Float
-  month     Int      // 1-12
-  year      Int      // e.g. 2026
+  month     Int
+  year      Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month, year])
 }
@@ -96,28 +107,354 @@ model Budget {
 model Expense {
   id          String   @id @default(cuid())
   userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   amount      Float
-  category    String   // "FOOD", "TRANSIT", "PRINTING", "ACADEMIC", "ENTERTAINMENT", "OTHER"
+  category    String
   description String?
   date        DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model AcademicTask {
   id            String   @id @default(cuid())
   userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title         String
   course        String?
-  type          String   // "ASSIGNMENT" or "QUIZ"
+  type          String
   dueAt         DateTime
   reminderHours Int      @default(24)
   notes         String?
   isCompleted   Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, dueAt])
+}
+
+model JobAlert {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId      String
+  job        JobListing @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  matchScore Int
+  reason     String
+  isRead     Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+
+  @@unique([userId, jobId])
+  @@index([userId, isRead])
+}
+
+model JobListing {
+  id              String     @id @default(cuid())
+  source          String // "LINKEDIN" | "BDJOBS" | "CURATED"
+  externalId      String // the id given by the source
+  url             String
+  title           String
+  company         String
+  companyLogo     String?
+  location        String     @default("Dhaka, Bangladesh")
+  isRemote        Boolean    @default(false)
+  jobType         String     @default("INTERNSHIP") // INTERNSHIP | FULL_TIME | PART_TIME | CONTRACT
+  experienceLevel String     @default("ENTRY") // INTERN | ENTRY | MID | SENIOR
+  description     String     @db.Text
+  skills          String[]   @default([])
+  category        String     @default("GENERAL") // SOFTWARE | DATA | HARDWARE | BUSINESS | FINANCE | MARKETING | GENERAL
+  salaryText      String?
+  minCgpa         Float?
+  postedAt        DateTime   @default(now())
+  deadline        DateTime?
+  isActive        Boolean    @default(true)
+  fetchedAt       DateTime   @default(now())
+  createdAt       DateTime   @default(now())
+
+  savedBy         SavedJob[]
+  alerts          JobAlert[]
+
+  @@unique([source, externalId])
+  @@index([postedAt])
+  @@index([category, jobType])
+}
+
+model JobPreference {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keywords           String[]  @default([]) // free-text search terms, e.g. "software intern"
+  skills             String[]  @default([]) // "React", "Python", "Figma"
+  preferredLocations String[]  @default([]) // "Dhaka", "Remote"
+  jobTypes           String[]  @default(["INTERNSHIP"])
+  minMatchScore      Int       @default(50) // alerts only fire above this
+  alertsEnabled      Boolean   @default(true)
+  lastSyncedAt       DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+model SavedJob {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobId     String
+  job       JobListing @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  status    String     @default("SAVED") // SAVED | APPLIED | INTERVIEW | OFFER | REJECTED
+  notes     String?
+  appliedAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, jobId])
+  @@index([userId, status])
+}
+
+model SavedScholarship {
+  id            String      @id
+  userId        String
+  scholarshipId String
+  status        String      @default("SAVED")
+  reminderDays  Int         @default(3)
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime
+  Scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scholarshipId])
+  @@index([userId, status])
+}
+
+model Scholarship {
+  id               String             @id
+  title            String
+  description      String
+  coverage         String
+  category         String
+  requirementCgpa  Float              @default(0.0)
+  department       String             @default("ALL")
+  deadline         DateTime
+  isActive         Boolean            @default(true)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime
+  SavedScholarship SavedScholarship[]
+  ScholarshipAlert ScholarshipAlert[]
+}
+
+model ScholarshipAlert {
+  id            String      @id
+  userId        String
+  scholarshipId String
+  isRead        Boolean     @default(false)
+  matchScore    Int         @default(0)
+  matchReason   String
+  createdAt     DateTime    @default(now())
+  Scholarship   Scholarship @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+  User          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scholarshipId])
+  @@index([userId, isRead])
+}
+
+model Resource {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  category    String   // "PDF", "ASSIGNMENT", "NOTES", "BOOK", "OTHER"
+  type        String   // "SALE", "RENT", "DONATION"
+  price       Float?   // Optional (nullable if donation)
+  contactInfo String
+  status      String   @default("AVAILABLE") // "AVAILABLE", "EXCHANGED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model LostFoundItem {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  type        String   // "LOST" or "FOUND"
+  category    String   // "ELECTRONICS", "DOCUMENTS", "BOOKS_NOTES", "ACCESSORIES", "CLOTHING", "OTHER"
+  location    String
+  imageUrl    String?  // base64 formatted or path
+  contactInfo String
+  status      String   @default("ACTIVE") // "ACTIVE", "RESOLVED"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ===========================================================================
+// MODULE 3 · MEMBER 3
+// (1) Campus Pulse — event board + live hangout broadcasts
+// (2) Emergency Contact & Campus Alert System
+// ===========================================================================
+
+/// ক্লাব বা ফ্যাকাল্টির পোস্ট করা অফিসিয়াল ক্যাম্পাস ইভেন্ট।
+model CampusEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @db.Text
+  category    String   @default("SEMINAR") // WORKSHOP | SEMINAR | TOURNAMENT | CULTURAL | CAREER | SOCIAL
+  clubName    String // যেমন "BRACU Computer Club (BUCC)"
+  venue       String // যেমন "UB40402, Merul Badda Campus"
+  startsAt    DateTime
+  endsAt      DateTime
+  capacity    Int? // null মানে সীমাহীন
+  feeTaka     Float    @default(0) // রেজিস্ট্রেশন ফি, টাকায়
+  contactInfo String? // ইভেন্ট অর্গানাইজারের ফোন/ইমেইল
+  isCancelled Boolean  @default(false)
+
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  rsvps EventRsvp[]
+
+  @@index([startsAt])
+  @@index([category])
+}
+
+/// একজন স্টুডেন্ট একটি ইভেন্টে যাচ্ছে কি না।
+model EventRsvp {
+  id      String      @id @default(cuid())
+  eventId String
+  event   CampusEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  status    String   @default("GOING") // GOING | INTERESTED
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+/// লাইভ "Hangout Broadcast" — ফাঁকা সময়ে সঙ্গী খোঁজার তাৎক্ষণিক পোস্ট।
+model HangoutBroadcast {
+  id          String  @id @default(cuid())
+  hostId      String
+  host        User    @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  activity    String  @default("OTHER") // CARROM | LUNCH | TEA | CRICKET | FUTSAL | BADMINTON | TABLE_TENNIS | CHESS | STUDY | OTHER
+  title       String
+  note        String? @db.Text
+  location    String // ক্যাম্পাসের কোন জায়গা
+  spotsNeeded Int     @default(1) // আর কতজন লাগবে
+
+  startsAt  DateTime // কখন মিট করতে চায়
+  expiresAt DateTime // এরপর ফিড থেকে অটো-হাইড
+  status    String   @default("OPEN") // OPEN | FULL | CLOSED
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  responses HangoutResponse[]
+  messages  HangoutMessage[]
+
+  @@index([status, expiresAt])
+}
+
+/// কে কোন হ্যাংআউটে জয়েন করেছে।
+model HangoutResponse {
+  id          String           @id @default(cuid())
+  broadcastId String
+  broadcast   HangoutBroadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime         @default(now())
+
+  @@unique([broadcastId, userId])
+}
+
+/// হ্যাংআউটের কুইক-চ্যাট মেসেজ।
+model HangoutMessage {
+  id          String           @id @default(cuid())
+  broadcastId String
+  broadcast   HangoutBroadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body        String           @db.Text
+  createdAt   DateTime         @default(now())
+
+  @@index([broadcastId, createdAt])
+}
+
+/// জরুরি যোগাযোগের নম্বর — জাতীয় সেবা ও ক্যাম্পাসের নিজস্ব দল।
+model EmergencyContact {
+  id         String  @id @default(cuid())
+  name       String // "জাতীয় জরুরি সেবা"
+  role       String // "পুলিশ · ফায়ার সার্ভিস · অ্যাম্বুলেন্স"
+  phone      String // "999"
+  category   String  @default("SECURITY") // NATIONAL | SECURITY | MEDICAL | FIRE | WARDEN | COUNSELLING | TRANSPORT
+  building   String? // ওয়ার্ডেনদের জন্য
+  floor      String?
+  isNational Boolean @default(false)
+  priority   Int     @default(100) // ছোট সংখ্যা আগে দেখাবে
+  isActive   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+
+  @@index([category, priority])
+}
+
+/// ক্যাম্পাস-ব্যাপী ব্রডকাস্ট অ্যালার্ট।
+model CampusAlert {
+  id       String  @id @default(cuid())
+  title    String
+  message  String  @db.Text
+  severity String  @default("WARNING") // INFO | WARNING | CRITICAL
+  category String  @default("OTHER") // FIRE | MEDICAL | SECURITY | WEATHER | UTILITY | OTHER
+  location String?
+
+  raisedById String
+  raisedBy   User   @relation(fields: [raisedById], references: [id], onDelete: Cascade)
+
+  isActive   Boolean   @default(true)
+  resolvedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  acknowledgements AlertAcknowledgement[]
+
+  @@index([isActive, createdAt])
+}
+
+/// "আমি নিরাপদ আছি" চেক-ইন।
+model AlertAcknowledgement {
+  id      String      @id @default(cuid())
+  alertId String
+  alert   CampusAlert @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  isSafe    Boolean  @default(true)
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([alertId, userId])
+}
+
+/// এক-ট্যাপ SOS রিকোয়েস্ট, প্রক্টর অফিসের লগের জন্য।
+model SosRequest {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type     String  @default("SECURITY") // MEDICAL | SECURITY | FIRE | HARASSMENT | OTHER
+  location String
+  note     String? @db.Text
+  status   String  @default("OPEN") // OPEN | ACKNOWLEDGED | RESOLVED
+
+  createdAt  DateTime  @default(now())
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
 }

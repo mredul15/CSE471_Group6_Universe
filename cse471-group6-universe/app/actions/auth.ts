@@ -36,9 +36,10 @@ export async function registerUser(data: {
 
     revalidatePath('/login');
     return { success: true, message: "Registration successful!" };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Registration Error:", error);
-    return { success: false, message: `Registration failed: ${error?.message || "Unknown error"}` };
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, message: `Registration failed: ${message}` };
   }
 }
 
@@ -62,12 +63,12 @@ export async function loginUser(data: { email: string; password: string }) {
     cookieStore.set('userId', user.id, { path: '/' });
 
     return { success: true, message: "Login successful!" };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Detailed Login Error:", error);
     // Directly display the error message on screen
-    return { 
-      success: false, 
-      message: error?.message ? `Database Error: ${error.message}` : "An error occurred during login." 
+    return {
+      success: false,
+      message: error instanceof Error ? `Database Error: ${error.message}` : "An error occurred during login."
     };
   }
 }

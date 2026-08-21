@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getResources, createResource, updateResourceStatus, deleteResource, searchGoogleBooks } from '../actions/resources';
 
@@ -59,7 +59,7 @@ export default function ResourcesPage() {
   const [isSearchingBooks, setIsSearchingBooks] = useState(false);
   const [bookSearchMessage, setBookSearchMessage] = useState("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const res = await getResources({
       category: categoryFilter,
@@ -71,14 +71,14 @@ export default function ResourcesPage() {
       setCurrentUserId(res.currentUserId);
     }
     setLoading(false);
-  };
+  }, [categoryFilter, typeFilter, searchQuery]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       loadData();
     }, 300);
     return () => clearTimeout(delayDebounce);
-  }, [categoryFilter, typeFilter, searchQuery]);
+  }, [loadData]);
 
   const handleCreateResource = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +127,7 @@ export default function ResourcesPage() {
 
   const handleUpdateStatus = async (id: string, currentStatus: string) => {
     const nextStatus = currentStatus === "AVAILABLE" ? "EXCHANGED" : "AVAILABLE";
-    const res = await updateResourceStatus(id, nextStatus as any);
+    const res = await updateResourceStatus(id, nextStatus);
     if (res.success) {
       loadData();
     } else {

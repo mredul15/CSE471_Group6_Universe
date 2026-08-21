@@ -1,12 +1,23 @@
 "use server";
 
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma = globalForPrisma.prisma || new PrismaClient();
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+
+interface GoogleBooksVolumeInfo {
+  title?: string;
+  authors?: string[];
+  description?: string;
+  imageLinks?: { thumbnail?: string };
+}
+
+interface GoogleBooksResponse {
+  items?: { volumeInfo?: GoogleBooksVolumeInfo }[];
+}
 
 async function getAuthUserId() {
   try {
@@ -30,7 +41,7 @@ export async function getResources(filters?: {
       return { success: false, message: "Unauthorized", resources: [], currentUserId: null };
     }
 
-    const whereClause: any = {};
+    const whereClause: Prisma.ResourceWhereInput = {};
 
     if (filters?.category && filters.category !== "ALL") {
       whereClause.category = filters.category.toUpperCase();
@@ -174,10 +185,10 @@ export async function searchGoogleBooks(query: string) {
       throw new Error(`Google Books API responded with status: ${response.status}`);
     }
     
-    const data = await response.json();
+    const data: GoogleBooksResponse = await response.json();
     const items = data.items || [];
-    
-    const books = items.map((item: any) => {
+
+    const books = items.map((item) => {
       const volumeInfo = item.volumeInfo || {};
       return {
         title: volumeInfo.title || "Unknown Book Title",
@@ -188,8 +199,9 @@ export async function searchGoogleBooks(query: string) {
     });
 
     return { success: true, books };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Google Books Search Error:", error);
-    return { success: false, books: [], message: error.message || "Failed to search books from Google API." };
+    const message = error instanceof Error ? error.message : "Failed to search books from Google API.";
+    return { success: false, books: [], message };
   }
 }

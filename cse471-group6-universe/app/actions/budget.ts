@@ -82,6 +82,15 @@ export async function updateBudget(amount: number, month: number, year: number) 
       return { success: false, message: "Invalid budget amount." };
     }
 
+    // চেক করা হচ্ছে ইউজার ডাটাবেসে এক্সিস্ট করে কি না, যাতে P2003 ফরেইন কি এরর না দেয়
+    const userExists = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+
+    if (!userExists) {
+      return { success: false, message: "User record not found in database. Please log in again." };
+    }
+
     const existingBudget = await prisma.budget.findUnique({
       where: {
         userId_month_year: {
@@ -296,13 +305,14 @@ export async function getAISpendingInsights(month: number, year: number) {
         icon: "💡",
         message: recommendationText
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Groq Recommendation Error Details:", err);
+      const message = err instanceof Error ? err.message : "Could not fetch live recommendations.";
       insights.push({
         title: "AI Savings Recommendations",
         type: "warning",
         icon: "💡",
-        message: `API Error: ${err?.message || "Could not fetch live recommendations."}`
+        message: `API Error: ${message}`
       });
     }
 

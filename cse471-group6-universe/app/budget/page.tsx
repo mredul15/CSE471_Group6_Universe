@@ -50,7 +50,6 @@ export default function BudgetPage() {
   const [currentMonth, setCurrentMonth] = useState<number>(new Date().getMonth() + 1);
   const [currentYear, setCurrentYear] = useState<number>(new Date().getFullYear());
 
-  // Form States
   const [newBudget, setNewBudget] = useState<string>('');
   const [expenseForm, setExpenseForm] = useState({
     amount: '',
@@ -94,7 +93,6 @@ export default function BudgetPage() {
     e.preventDefault();
     const amt = parseFloat(newBudget);
     if (isNaN(amt) || amt <= 0) return;
-
     try {
       setSubmittingBudget(true);
       const res = await updateBudget(amt, currentMonth, currentYear);
@@ -102,7 +100,6 @@ export default function BudgetPage() {
         setBudgetAmount(amt);
         await loadData(currentMonth, currentYear);
       } else {
-        console.error("Failed to update budget", res?.message);
         alert(res?.message || "Failed to update budget limit.");
       }
     } catch (error) {
@@ -116,7 +113,6 @@ export default function BudgetPage() {
     e.preventDefault();
     const amt = parseFloat(expenseForm.amount);
     if (isNaN(amt) || amt <= 0) return;
-
     try {
       setSubmittingExpense(true);
       const res = await addExpense({
@@ -125,17 +121,15 @@ export default function BudgetPage() {
         description: expenseForm.description,
         date: expenseForm.date
       });
-
       if (res && res.success) {
         setExpenseForm({
           amount: '',
-          category: expenseForm.category,
+          category: 'FOOD',
           description: '',
           date: new Date().toISOString().split('T')[0]
         });
         await loadData(currentMonth, currentYear);
       } else {
-        console.error("Failed to add expense");
         alert(res?.message || "Failed to log expense.");
       }
     } catch (error) {
@@ -157,12 +151,10 @@ export default function BudgetPage() {
     }
   };
 
-  // Calculations
   const totalSpent = expenses.reduce((sum, e) => sum + e.amount, 0);
   const remainingBudget = budgetAmount - totalSpent;
   const spentPct = budgetAmount > 0 ? Math.min(100, (totalSpent / budgetAmount) * 100) : 0;
 
-  // Category totals
   const categoryTotals: { [key: string]: number } = {
     FOOD: 0,
     TRANSIT: 0,
@@ -171,6 +163,7 @@ export default function BudgetPage() {
     ENTERTAINMENT: 0,
     OTHER: 0
   };
+
   expenses.forEach(e => {
     const cat = e.category.toUpperCase();
     if (categoryTotals[cat] !== undefined) {
@@ -180,7 +173,6 @@ export default function BudgetPage() {
     }
   });
 
-  // SVG Donut calculations
   const donutData = Object.keys(categoryTotals).map(cat => ({
     name: cat,
     value: categoryTotals[cat],
@@ -188,33 +180,6 @@ export default function BudgetPage() {
   })).filter(item => item.value > 0);
 
   const donutTotal = donutData.reduce((sum, item) => sum + item.value, 0);
-
-  // SVG Bar Chart: Daily spending
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
-  const dailySpentArray = Array.from({ length: daysInMonth }, (_, i) => {
-    const dayNum = i + 1;
-    const dayExpenses = expenses.filter(e => {
-      const expDate = new Date(e.date);
-      return expDate.getDate() === dayNum && expDate.getMonth() + 1 === currentMonth && expDate.getFullYear() === currentYear;
-    });
-    return {
-      day: dayNum,
-      amount: dayExpenses.reduce((sum, e) => sum + e.amount, 0)
-    };
-  });
-
-  const maxDailySpend = Math.max(...dailySpentArray.map(d => d.amount), 100);
-
-  if (loading && expenses.length === 0 && !user) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center font-sans">
-        <div className="flex items-center gap-3">
-          <div className="w-4 h-4 rounded-full bg-indigo-600 animate-ping"></div>
-          <p className="text-gray-500 font-bold text-sm">Loading AI Budget Ledger...</p>
-        </div>
-      </div>
-    );
-  }
 
   let cumulativePercent = 0;
   const donutSlices = donutData.map((slice) => {
@@ -240,6 +205,17 @@ export default function BudgetPage() {
       pct: (percent * 100).toFixed(1)
     };
   });
+
+  if (loading && expenses.length === 0 && !user) {
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center font-sans">
+        <div className="flex items-center gap-3">
+          <div className="w-4 h-4 rounded-full bg-indigo-600 animate-ping"></div>
+          <p className="text-gray-500 font-bold text-sm">Loading AI Budget Ledger...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8fafc] p-6 lg:p-10 font-sans text-gray-900 flex flex-col justify-between">
@@ -269,7 +245,19 @@ export default function BudgetPage() {
                 </option>
               ))}
             </select>
-            
+
+            <select
+              value={currentYear}
+              onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+              className="bg-white border border-gray-200 text-gray-800 text-xs font-bold px-3 py-2.5 rounded-xl outline-none"
+            >
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i).map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+
             <Link href="/dashboard" className="bg-[#0f172a] text-white font-bold text-xs px-4 py-2.5 rounded-xl hover:bg-gray-800 transition shadow-sm ml-auto sm:ml-0">
               ← Dashboard
             </Link>
@@ -301,7 +289,6 @@ export default function BudgetPage() {
 
         {/* Dashboard Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
           <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between">
             <div>
               <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Monthly Budget</p>
@@ -361,14 +348,12 @@ export default function BudgetPage() {
               <strong className="text-gray-900">Tk {forecast?.dailyAverage.toFixed(2) || '0.00'}</strong>
             </div>
           </div>
-
         </div>
 
-        {/* Charts & Form Layout */}
+        {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           <div className="space-y-6">
-            
             <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-4">
               <div>
                 <h3 className="font-bold text-gray-900 text-base">Log New Expense</h3>
@@ -456,95 +441,55 @@ export default function BudgetPage() {
                 </div>
               </div>
             )}
-
           </div>
 
           <div className="lg:col-span-2 space-y-6">
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between items-center text-center">
-                <div className="w-full text-left mb-4">
-                  <h3 className="font-bold text-gray-900 text-sm">Category Breakdown</h3>
-                  <p className="text-[11px] text-gray-400 font-semibold mt-0.5">Distribution of current month expenses.</p>
+            {/* Category Breakdown Donut Chart */}
+            <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between items-center text-center">
+              <div className="w-full text-left mb-4">
+                <h3 className="font-bold text-gray-900 text-sm">Category Breakdown</h3>
+                <p className="text-[11px] text-gray-400 font-semibold mt-0.5">Distribution of current month expenses.</p>
+              </div>
+
+              {donutTotal === 0 ? (
+                <div className="h-48 flex items-center justify-center text-xs font-semibold text-gray-400 border border-dashed border-gray-200 rounded-2xl w-full">
+                  No data to chart. Add expenses to generate.
                 </div>
-
-                {donutTotal === 0 ? (
-                  <div className="h-48 flex items-center justify-center text-xs font-semibold text-gray-400 border border-dashed border-gray-200 rounded-2xl w-full">
-                    No data to chart. Add expenses to generate.
-                  </div>
-                ) : (
-                  <div className="w-full flex flex-col items-center gap-4">
-                    <div className="relative w-40 h-40">
-                      <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
-                        {donutSlices.map((slice, index) => (
-                          <path
-                            key={index}
-                            d={slice.path}
-                            fill={slice.color}
-                            className="transition-all hover:opacity-85 duration-350 cursor-pointer"
-                          />
-                        ))}
-                        <circle cx="50" cy="50" r="18" fill="white" />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
-                        <span className="text-xs font-black text-gray-900 mt-0.5">Tk {donutTotal.toFixed(0)}</span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 text-[10px] font-bold w-full text-left mt-2">
-                      {donutData.map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5">
-                          <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
-                          <span className="text-gray-500 truncate">{item.name}:</span>
-                          <span className="text-gray-900 ml-auto">Tk {item.value.toFixed(0)}</span>
-                        </div>
+              ) : (
+                <div className="w-full flex flex-col items-center gap-4">
+                  <div className="relative w-40 h-40">
+                    <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
+                      {donutSlices.map((slice, index) => (
+                        <path
+                          key={index}
+                          d={slice.path}
+                          fill={slice.color}
+                          className="transition-all hover:opacity-85 duration-350 cursor-pointer"
+                        />
                       ))}
+                      <circle cx="50" cy="50" r="18" fill="white" />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Total</span>
+                      <span className="text-xs font-black text-gray-900 mt-0.5">Tk {donutTotal.toFixed(0)}</span>
                     </div>
                   </div>
-                )}
-              </div>
 
-              <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm flex flex-col justify-between w-full">
-                <div className="w-full text-left mb-4">
-                  <h3 className="font-bold text-gray-900 text-sm">Daily Expenses Trend</h3>
-                  <p className="text-[11px] text-gray-400 font-semibold mt-0.5">Spending timeline for this month.</p>
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold w-full text-left mt-2">
+                    {donutData.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5">
+                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }}></span>
+                        <span className="text-gray-500 truncate">{item.name}:</span>
+                        <span className="text-gray-900 ml-auto">Tk {item.value.toFixed(0)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-
-                {expenses.length === 0 ? (
-                  <div className="h-48 flex items-center justify-center text-xs font-semibold text-gray-400 border border-dashed border-gray-200 rounded-2xl w-full">
-                    No data to chart. Add expenses to generate.
-                  </div>
-                ) : (
-                  <div className="w-full flex flex-col justify-end">
-                    <div className="h-32 flex items-end gap-1 w-full border-b border-gray-100 pb-1">
-                      {dailySpentArray.map((d, index) => {
-                        const h = (d.amount / maxDailySpend) * 100;
-                        return (
-                          <div key={index} className="flex-1 flex flex-col items-center group relative cursor-pointer">
-                            <div className="absolute bottom-full mb-1 bg-gray-900 text-white text-[9px] font-bold px-2 py-0.5 rounded shadow-md opacity-0 group-hover:opacity-100 pointer-events-none transition z-10 whitespace-nowrap">
-                              Day {d.day}: Tk {d.amount.toFixed(0)}
-                            </div>
-                            <div
-                              style={{ height: `${Math.max(4, h)}%` }}
-                              className={`w-full rounded-t-sm transition-all duration-300 ${d.amount > 0 ? 'bg-indigo-500 hover:bg-indigo-600' : 'bg-gray-100'}`}
-                            ></div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="flex justify-between text-[9px] font-bold text-gray-400 mt-2 px-1">
-                      <span>Day 1</span>
-                      <span>Day 15</span>
-                      <span>Day {daysInMonth}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
+              )}
             </div>
 
+            {/* AI Insights Section */}
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
               <h3 className="font-bold text-gray-900 text-base mb-4 flex items-center gap-2">
                 <span>🤖</span> AI Savings & Academic Insights
@@ -577,6 +522,7 @@ export default function BudgetPage() {
               )}
             </div>
 
+            {/* Expense Ledger Table */}
             <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
               <div className="flex justify-between items-center mb-4">
                 <div>

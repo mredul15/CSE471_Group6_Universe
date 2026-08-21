@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getDashboardData, logoutUser } from '@/app/actions/dashboard';
+import { getJobSummary } from '@/app/actions/jobs';
 
 interface UserProfile {
   name: string;
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [goal, setGoal] = useState<AcademicGoalItem | null>(null);
   const [currentBudget, setCurrentBudget] = useState(0);
   const [currentSpent, setCurrentSpent] = useState(0);
+  const [jobStats, setJobStats] = useState({ unreadAlerts: 0, savedCount: 0, appliedCount: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,6 +50,16 @@ export default function DashboardPage() {
       } else {
         router.push('/login');
       }
+
+      const jobRes = await getJobSummary();
+      if (jobRes.success) {
+        setJobStats({
+          unreadAlerts: jobRes.unreadAlerts,
+          savedCount: jobRes.savedCount,
+          appliedCount: jobRes.appliedCount,
+        });
+      }
+
       setLoading(false);
     }
     loadData();
@@ -239,6 +251,138 @@ export default function DashboardPage() {
                 className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
               >
                 Launch Budget Tracker
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Feature Card 4: Career Matchmaker */}
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center font-bold mb-6 group-hover:bg-sky-600 group-hover:text-white transition">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v1m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Career Matchmaker</h3>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                  Internships and graduate roles aggregated from LinkedIn and BDJobs, scored against your department, semester and CGPA, with alerts when a strong match appears.
+                </p>
+
+                <div className="bg-sky-50/60 border border-sky-100 rounded-2xl p-4 mb-6 text-xs font-semibold text-sky-900 flex justify-between items-center">
+                  <span>Saved roles: <strong>{jobStats.savedCount}</strong></span>
+                  <span className="text-sky-700 font-bold">
+                    {jobStats.unreadAlerts} new alert{jobStats.unreadAlerts === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </div>
+
+              <Link
+                href="/jobs"
+                className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
+              >
+                Launch Career Matchmaker
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Peer-to-Peer & Campus Life Grid */}
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Peer-to-Peer & Campus Life</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Feature Card: P2P Resource Exchange */}
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center font-bold mb-6 group-hover:bg-indigo-600 group-hover:text-white transition font-sans text-xl">
+                  📚
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">P2P Resource Exchange</h3>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                  Buy, sell, rent, or donate used textbooks, PDFs, slides, and class notes directly with other students on campus.
+                </p>
+              </div>
+
+              <Link
+                href="/resources"
+                className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
+              >
+                Open Resources Exchange
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Feature Card: Campus Lost & Found */}
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center font-bold mb-6 group-hover:bg-rose-600 group-hover:text-white transition font-sans text-xl">
+                  🔍
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Campus Lost & Found</h3>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                  Lost a wallet or found keys? Report details, search items category-wise, check locations, and help reunite owners with their belongings.
+                </p>
+              </div>
+
+              <Link
+                href="/lost-found"
+                className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
+              >
+                Open Lost & Found Portal
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Feature Card: Campus Pulse */}
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 bg-violet-50 text-violet-600 rounded-2xl flex items-center justify-center font-bold mb-6 group-hover:bg-violet-600 group-hover:text-white transition font-sans text-xl">
+                  🎉
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Campus Pulse</h3>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                  Discover club events, RSVP with friends, and broadcast a live hangout when you have free time between classes.
+                </p>
+              </div>
+
+              <Link
+                href="/campus-pulse"
+                className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
+              >
+                Open Campus Pulse
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Feature Card: Emergency Contact & Campus Alerts */}
+            <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition flex flex-col justify-between group">
+              <div>
+                <div className="w-12 h-12 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center font-bold mb-6 group-hover:bg-red-600 group-hover:text-white transition font-sans text-xl">
+                  🆘
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Emergency Contact & Alerts</h3>
+                <p className="text-sm text-gray-500 font-medium leading-relaxed mb-6">
+                  One-tap calling for national and campus emergency numbers, SOS logging, and campus-wide safety alerts.
+                </p>
+              </div>
+
+              <Link
+                href="/emergency"
+                className="w-full bg-[#0f172a] hover:bg-gray-800 text-white font-bold py-3.5 px-6 rounded-2xl text-xs flex items-center justify-center gap-2 transition shadow-md"
+              >
+                Open Emergency Center
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                 </svg>

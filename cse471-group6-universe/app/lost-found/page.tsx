@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getLostFoundItems, createLostFoundItem, updateLostFoundStatus, deleteLostFoundItem } from '../actions/lost-found';
 
@@ -57,7 +57,7 @@ export default function LostFoundPage() {
   });
   const [imageFileBase64, setImageFileBase64] = useState<string>("");
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const res = await getLostFoundItems({
       type: typeTab,
@@ -69,14 +69,14 @@ export default function LostFoundPage() {
       setCurrentUserId(res.currentUserId);
     }
     setLoading(false);
-  };
+  }, [typeTab, categoryFilter, searchQuery]);
 
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       loadData();
     }, 300);
     return () => clearTimeout(delayDebounce);
-  }, [typeTab, categoryFilter, searchQuery]);
+  }, [loadData]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -134,7 +134,7 @@ export default function LostFoundPage() {
 
   const handleUpdateStatus = async (id: string, currentStatus: string) => {
     const nextStatus = currentStatus === "ACTIVE" ? "RESOLVED" : "ACTIVE";
-    const res = await updateLostFoundStatus(id, nextStatus as any);
+    const res = await updateLostFoundStatus(id, nextStatus);
     if (res.success) {
       loadData();
     } else {
@@ -249,7 +249,7 @@ export default function LostFoundPage() {
             <div className="text-4xl">🚨</div>
             <h3 className="font-bold text-gray-800 text-base">No items reported</h3>
             <p className="text-gray-400 text-xs max-w-sm mx-auto">
-              If you have lost something or found a classmate's belonging, list it to help it find its owner!
+              If you have lost something or found a classmate&apos;s belonging, list it to help it find its owner!
             </p>
           </div>
         ) : (

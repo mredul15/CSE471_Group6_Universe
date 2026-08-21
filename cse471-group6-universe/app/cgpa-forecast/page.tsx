@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
-import { getCGPAData, saveSemesterGrades, saveAcademicGoal } from '../actions/cgpa';
+import { getCGPAData, saveAcademicGoal } from '../actions/cgpa';
 
 const gradeWeights: Record<string, number> = {
   'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
