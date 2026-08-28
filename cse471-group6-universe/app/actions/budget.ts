@@ -267,38 +267,54 @@ export async function getAISpendingInsights(month: number, year: number) {
       }
     });
 
+    let highestCategory = 'FOOD';
+    let maxAmount = -1;
+    for (const [cat, amt] of Object.entries(categoryTotals)) {
+      if (amt > maxAmount) {
+        maxAmount = amt;
+        highestCategory = cat;
+      }
+    }
+
     const insights: AIInsightCard[] = [];
 
     try {
-      const recommendationPrompt = `Act as an AI finance mentor for a university student. Here is their current spending breakdown:
-      - Food & Snacks: Tk ${categoryTotals['FOOD']}
-      - Transit: Tk ${categoryTotals['TRANSIT']}
-      - Printing & Academic: Tk ${categoryTotals['PRINTING'] + categoryTotals['ACADEMIC']}
-      - Entertainment: Tk ${categoryTotals['ENTERTAINMENT']}
-      - Other: Tk ${categoryTotals['OTHER']}
-      - Total Monthly Budget: Tk ${totalBudget}
+      const recommendationPrompt = `Act as an expert, practical financial mentor for a university student. 
+      Financial Data:
+      - Budget: Tk ${totalBudget}
       - Total Spent: Tk ${totalSpent}
+      - Remaining: Tk ${remaining}
+      - Breakdown: Food = Tk ${categoryTotals['FOOD']}, Transit = Tk ${categoryTotals['TRANSIT']}, Entertainment = Tk ${categoryTotals['ENTERTAINMENT']}, Academic & Printing = Tk ${categoryTotals['PRINTING'] + categoryTotals['ACADEMIC']}, Other = Tk ${categoryTotals['OTHER']}
+      - Highest Expense Category: ${highestCategory} (Tk ${maxAmount})
 
-      Provide 2 to 3 distinct, professional, and comprehensive savings recommendations or tactical advice to optimize their student budget and control unnecessary expenses. Format it clearly with bullet points or structured advice.`;
+      Instructions: Write a rich, detailed, narrative financial recommendation (4 to 5 long paragraphs, NO bullet points). 
+      1. First, deeply analyze the highest spending category (${highestCategory}). Explain why spending heavily here is draining the wallet, and give concrete, practical alternative lifestyle ideas and habits to minimize it.
+      2. Second, go through the other remaining active expense categories one by one. Provide clever, actionable tips and alternative paths to cut costs in those secondary sectors as well.
+      3. Give inspiring, practical lifestyle advice on how to manage daily routines and save money for the rest of the month.`;
 
-      const recResponse = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: recommendationPrompt,
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.1-8b-instant",
+        messages: [{ role: "user", content: recommendationPrompt }],
+        temperature: 0.8,
+        max_tokens: 1000,
       });
 
+      const recommendationText = completion.choices[0]?.message?.content || `Your total expenditure has reached Tk ${totalSpent} against your Tk ${totalBudget} budget, with the heaviest outflow concentrated in ${highestCategory}. To fix this, you should immediately adopt alternative lifestyle habits for ${highestCategory}, such as reducing cafe outings or preparing home meals. Additionally, review your secondary expenses in transit, printing, and academic sectors, minimizing daily costs step-by-step to secure your financial standing for the rest of the month.`;
+
       insights.push({
-        title: "AI Tailored Savings Recommendations & Habit Analysis",
-        type: "success",
+        title: `AI Lifestyle & Financial Recommendations (Focus: ${highestCategory})`,
+        type: shortageType,
         icon: "💡",
         message: recResponse.text || "Optimize your daily campus transit and food costs to maximize monthly savings and prevent overspending."
       });
-    } catch (err) {
-      console.error("Gemini Recommendation Error:", err);
+    } catch (err: any) {
+      console.error("Groq Recommendation Error:", err);
+      // ফেইল করলেও যেন বড় ও ডিটেইলড সাজেশন দেখায় তার সুব্যবস্থা
       insights.push({
-        title: "AI Savings Recommendations",
-        type: "success",
+        title: `AI Lifestyle & Financial Recommendations (Focus: ${highestCategory})`,
+        type: "warning",
         icon: "💡",
-        message: "• Monitor high-expense categories like food and entertainment.\n• Set daily spending caps to stay comfortably within your personalized budget limit."
+        message: `Looking at your current spending of Tk ${totalSpent} out of your Tk ${totalBudget} budget, your major financial leakage is happening in the ${highestCategory} category. To turn things around, you need to radically change your approach: for ${highestCategory}, try avoiding unnecessary expenditures, plan ahead, and adopt budget-friendly alternatives like home-cooked food or shared commutes. Furthermore, look closely at your secondary sectors such as transit, academic books, and printing costs. By optimizing your daily routes, buying second-hand notes, and cutting down casual hangouts, you can easily save a significant amount of money and ensure complete financial security for the rest of the month.`
       });
     }
 
